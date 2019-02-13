@@ -10,7 +10,14 @@ process.title = 'remotedebug-ios-webkit-adapter';
 let argv = optimist
   // .usage('Usage: $0 -p [num]')
   // .alias('p', 'port').describe('p', 'the adapter listerning post').default('p', 9000)
+  .usage('Usage: $0 --adapterPort [port] --proxyPort [port] --proxyPath [path] --deviceId [udid] --deviceName [name] --deviceVersion [version]')
   .describe('version', 'prints current version').boolean('boolean')
+  .describe('adapterPort','the remotedebug-ios-webkit-adapter listening port')
+  .describe('proxyPort', 'the ios-webkit-debug-proxy listening port')
+  .describe('proxyPath','the ios-webkit-debug-proxy binary path')
+  .describe('deviceId', 'the device UDID')
+  .describe('deviceName', 'the device name')
+  .describe('deviceVersion','the device iOS version')
   .demand(['adapterPort', 'proxyPort', 'proxyPath', 'deviceId', 'deviceName', 'deviceVersion'])
   .string(['deviceId', 'deviceName', 'deviceVersion'])
   .argv;
