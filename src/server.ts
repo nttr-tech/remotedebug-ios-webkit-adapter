@@ -11,7 +11,7 @@ import { Logger, debug } from './logger';
 
 import { Adapter } from './adapters/adapter';
 import { IOSAdapter } from './adapters/iosAdapter';
-import { IIOSProxySettings } from './adapters/adapterInterfaces';
+import { IIOSDeviceTarget, IIOSProxySettings } from './adapters/adapterInterfaces';
 // import { TestAdapter } from './adapters/testAdapter';
 
 export class ProxyServer extends EventEmitter {
@@ -27,7 +27,7 @@ export class ProxyServer extends EventEmitter {
         super();
     }
 
-    public async run(serverPort: number): Promise<number> {
+    public async run(serverPort: number, proxySettings: IIOSProxySettings, deviceTarget: IIOSDeviceTarget): Promise<number> {
         this._serverPort = serverPort;
         this._clients = new Map<ws, string>();
 
@@ -44,15 +44,15 @@ export class ProxyServer extends EventEmitter {
 
         // Start server and return the port number
         this._hs.listen(this._serverPort);
-        const port = this._hs.address().port;
+        const port = this._serverPort;
 
-        const settings = await IOSAdapter.getProxySettings({
-            proxyPath: null,
-            proxyPort: (port + 100),
-            proxyArgs: null
-        });
+        // const settings = await IOSAdapter.getProxySettings({
+        //     proxyPath: null,
+        //     proxyPort: (port + 100),
+        //     proxyArgs: null
+        // });
 
-        this._adapter = new IOSAdapter(`/ios`, `ws://localhost:${port}`, <IIOSProxySettings>settings);
+        this._adapter = new IOSAdapter(`/ios`, `ws://localhost:${port}`, <IIOSProxySettings>proxySettings, <IIOSDeviceTarget> deviceTarget);
         
         return this._adapter.start().then(() => {
             this.startTargetFetcher();

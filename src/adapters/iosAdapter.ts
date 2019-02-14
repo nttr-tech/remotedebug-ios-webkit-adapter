@@ -21,9 +21,10 @@ import { IOS9Protocol } from '../protocols/ios/ios9';
 
 export class IOSAdapter extends AdapterCollection {
     private _proxySettings: IIOSProxySettings;
+    private _deviceTarget: IIOSDeviceTarget;
     private _protocolMap: Map<Target, IOSProtocol>;
 
-    constructor(id: string, socket: string, proxySettings: IIOSProxySettings) {
+    constructor(id: string, socket: string, proxySettings: IIOSProxySettings, deviceTarget: IIOSDeviceTarget) {
         super(id, socket, {
             port: proxySettings.proxyPort,
             proxyExePath: proxySettings.proxyPath,
@@ -31,6 +32,7 @@ export class IOSAdapter extends AdapterCollection {
         });
 
         this._proxySettings = proxySettings;
+        this._deviceTarget = deviceTarget;
         this._protocolMap = new Map<Target, IOSProtocol>();
     }
 
@@ -39,39 +41,40 @@ export class IOSAdapter extends AdapterCollection {
         Logger.log('iosAdapter.getTargets');
 
         return new Promise((resolve) => {
-            request(this._url, (error: any, response: http.IncomingMessage, body: any) => {
-                if (error) {
-                    resolve([]);
-                    return;
-                }
+            resolve([this._deviceTarget]);
+        //     request(this._url, (error: any, response: http.IncomingMessage, body: any) => {
+        //         if (error) {
+        //             resolve([]);
+        //             return;
+        //         }
 
-                const devices: IIOSDeviceTarget[] = JSON.parse(body);
-                resolve(devices);
-            });
-        }).then((devices: IIOSDeviceTarget[]) => {
-            // Now request the device version for each device found
-            const deviceVersions: Promise<IIOSDeviceTarget>[] = [];
-            devices.forEach(d => {
+        //         const devices: IIOSDeviceTarget[] = JSON.parse(body);
+        //         resolve(devices);
+        //     });
+        // }).then((devices: IIOSDeviceTarget[]) => {
+        //     // Now request the device version for each device found
+        //     const deviceVersions: Promise<IIOSDeviceTarget>[] = [];
+        //     devices.forEach(d => {
 
-                let getter;
-                if (d.deviceId === 'SIMULATOR') {
-                    d.version = '9.3.0'; // TODO: Find a way to auto detect version. Currently hardcoding it.
-                    getter = Promise.resolve(d);
-                } else {
-                    getter = this.getDeviceVersion(d.deviceId).then(v => {
-                        d.version = v;
-                        return Promise.resolve(d);
-                    }).catch((err) => {
-                        // Device version detection failed, using fallback
-                        Logger.log(`error.iosAdapter.getTargets.getDeviceVersion.failed.fallback, device=${d}`);
-                        d.version = '9.3.0';
-                        return Promise.resolve(d);
-                    });
-                }
+        //         let getter;
+        //         if (d.deviceId === 'SIMULATOR') {
+        //             d.version = '9.3.0'; // TODO: Find a way to auto detect version. Currently hardcoding it.
+        //             getter = Promise.resolve(d);
+        //         } else {
+        //             getter = this.getDeviceVersion(d.deviceId).then(v => {
+        //                 d.version = v;
+        //                 return Promise.resolve(d);
+        //             }).catch((err) => {
+        //                 // Device version detection failed, using fallback
+        //                 Logger.log(`error.iosAdapter.getTargets.getDeviceVersion.failed.fallback, device=${d}`);
+        //                 d.version = '9.3.0';
+        //                 return Promise.resolve(d);
+        //             });
+        //         }
 
-                deviceVersions.push(getter);
-            });
-            return Promise.all(deviceVersions);
+        //         deviceVersions.push(getter);
+        //     });
+        //     return Promise.all(deviceVersions);
         }).then((devices: IIOSDeviceTarget[]) => {
             // Now start up all the adapters
             devices.forEach(d => {
