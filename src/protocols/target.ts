@@ -19,6 +19,7 @@ export class Target extends EventEmitter {
     private _adapterRequestMap: Map<number, { resolve: (any) => void, reject: (any) => void }>;
     private _requestId: number;
     private _id: string;
+    private _targetId: string;
 
     constructor(targetId: string, data?: ITarget) {
         super();
@@ -165,7 +166,31 @@ export class Target extends EventEmitter {
     }
 
     private onMessageFromTarget(rawMessage: string): void {
-        const msg = JSON.parse(rawMessage);
+        let msg = JSON.parse(rawMessage);
+        switch (msg.method) {
+            case 'Target.targetCreated':
+                this._targetId = msg.params.targetInfo.targetId;
+                debug("Target.targetCreated: targetId = " + this._targetId + ", targetInfo = " + JSON.stringify(msg.params.targetInfo));
+                return;
+            case 'Target.targetDestroyed':
+                this._targetId = null;
+                debug("Target.targetDestroyed: targetId = " + this._targetId);
+                return;
+            case 'Target.dispatchMessageFromTarget':
+                if (!msg.params || !msg.params.message || !msg.params.targetId || !this._targetId || this._targetId !== msg.params.targetId) {
+                    debug("Target.dispatchMessageFromTarget (unknown target): targetId = " + this._targetId + ", rawMessage = " + rawMessage);
+                    return;
+                }
+                debug("Target.dispatchMessageFromTarget: targetId = " + this._targetId + ", rawMessage = " + rawMessage);
+                rawMessage = msg.params.message;
+                msg = JSON.parse(rawMessage);
+                break;
+            default:
+                if (this._targetId) {
+                    debug("Non-Target message was ignored: rawMessage = " + rawMessage)
+                    return;
+                }
+        }
 
         if ('id' in msg) {
             if (this._toolRequestMap.has(msg.id)) {
@@ -244,6 +269,18 @@ export class Target extends EventEmitter {
     }
 
     private sendToTarget(rawMessage: string): void {
+        const msg = JSON.parse(rawMessage);
+        if (this._targetId) {
+            debug("Target.sendMessageToTarget: targetId = " + this._targetId + ", rawMessage = " + rawMessage);
+            rawMessage = JSON.stringify({
+                id: msg.id,
+                method: 'Target.sendMessageToTarget',
+                params: {
+                    message: rawMessage,
+                    targetId: this._targetId
+                }
+            });
+        }
         debug(`sendToTarget.${rawMessage}`);
 
         // Make sure the target socket can receive messages
