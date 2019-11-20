@@ -602,18 +602,23 @@ export abstract class IOSProtocol extends ProtocolAdapter {
             type = message.type;
         }
 
-        var consoleMessage = { 
-            type: type,
-            args: message.parameters || [],
-            executionContextId: this._lastPageExecutionContextId,
+        const consoleMessage = {
+            source: message.source,
+            level: type,
+            text: message.text,
+            lineNumber: message.line,
             timestamp: (new Date).getTime(),
-            stackTrace: {
+            url: message.url,
+            stackTrace: message.stackTrace ? {
                 callFrames: message.stackTrace
-            }
-        }
+            } : undefined,
+            networkRequestId: message.networkRequestId,
+        };
 
-        this._target.fireEventToTools('Runtime.consoleAPICalled', consoleMessage);
-        
+        this._target.fireEventToTools('Log.entryAdded', {
+            entry: consoleMessage
+        });
+
         return Promise.resolve(null);
     }
 
@@ -748,7 +753,7 @@ export abstract class IOSProtocol extends ProtocolAdapter {
             } else if (styleText.substr(index, IOSProtocol.END_COMMENT.length) === IOSProtocol.END_COMMENT) {
                 if (startIndices.length === 0) {
                     // Invalid state
-                    return null;
+                    return [];
                 }
 
                 const startIndex = startIndices.pop();
@@ -773,7 +778,7 @@ export abstract class IOSProtocol extends ProtocolAdapter {
 
         if (startIndices.length !== 0) {
             // Invalid state
-            return null;
+            return [];
         }
 
         return styles;
