@@ -169,12 +169,22 @@ export class Target extends EventEmitter {
         let msg = JSON.parse(rawMessage);
         switch (msg.method) {
             case 'Target.targetCreated':
-                this._targetId = msg.params.targetInfo.targetId;
-                debug("Target.targetCreated: targetId = " + this._targetId + ", targetInfo = " + JSON.stringify(msg.params.targetInfo));
+                const targetInfo = msg.params.targetInfo;
+                if (!targetInfo.type || targetInfo.type === 'page') {
+                    this._targetId = targetInfo.targetId;
+                    debug("Target.targetCreated: targetId = " + this._targetId + ", targetInfo = " + JSON.stringify(targetInfo));
+                } else {
+                    debug("Target.targetCreated (ignored): targetId = " + targetInfo.targetId + ", type = " + targetInfo.type);
+                }
                 return;
             case 'Target.targetDestroyed':
-                this._targetId = null;
-                debug("Target.targetDestroyed: targetId = " + this._targetId);
+                const targetId = msg.params.targetId;
+                if (this._targetId === targetId) {
+                    this._targetId = null;
+                    debug("Target.targetDestroyed: targetId = " + this._targetId);
+                } else {
+                    debug("Target.targetDestroyed (ignored): targetId = " + targetId);
+                }
                 return;
             case 'Target.dispatchMessageFromTarget':
                 if (!msg.params || !msg.params.message || !msg.params.targetId || !this._targetId || this._targetId !== msg.params.targetId) {
