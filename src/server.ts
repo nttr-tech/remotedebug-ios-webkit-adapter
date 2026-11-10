@@ -44,7 +44,8 @@ export class ProxyServer extends EventEmitter {
         this.setupHttpHandlers();
 
         // Start server and return the port number
-        this._hs.listen(this._serverPort);
+        // 同一ネットワーク内の他のマシンや端末から不正アクセスされるのを防ぐためにループバックでのみ待ち受ける
+        this._hs.listen(this._serverPort, '127.0.0.1');
         const port = this._serverPort;
 
         // const settings = await IOSAdapter.getProxySettings({
@@ -53,7 +54,7 @@ export class ProxyServer extends EventEmitter {
         //     proxyArgs: null
         // });
 
-        this._adapter = new IOSAdapter(`/ios`, `ws://localhost:${port}`, <IIOSProxySettings>proxySettings, <IIOSDeviceTarget> deviceTarget);
+        this._adapter = new IOSAdapter(`/ios`, `ws://127.0.0.1:${port}`, <IIOSProxySettings>proxySettings, <IIOSDeviceTarget> deviceTarget);
         
 
         return this._adapter.start().then(() => {
