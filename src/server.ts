@@ -44,7 +44,7 @@ export class ProxyServer extends EventEmitter {
         this.setupHttpHandlers();
 
         // Start server and return the port number
-        // RTKからだけ接続するため、ほかのホストから届かないようにループバックだけで待ち受ける
+        // 同一ネットワーク内の他のマシンや端末から不正アクセスされるのを防ぐためにループバックでのみ待ち受ける
         this._hs.listen(this._serverPort, '127.0.0.1');
         const port = this._serverPort;
 
